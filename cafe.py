@@ -78,7 +78,7 @@ def display_menu(menu):
         if details["category"] == "Food":
             print(f"{itemcode:<20} {details['name']:<30} {details['category']:<20} ${details['price']:<20.2f}\n")
  
-#Invoking the display menu dunction
+#Invoking the display menu function
 display_menu(menu)
 
 
@@ -86,9 +86,75 @@ def display_main_menu():
     print("\n")
     print("-" * 80)
     print("WELCOME TO BREW & BYTE CAFE".center(80))
+    print("Campus Ordering System".center(80))
     print("=" * 80)
-    print("1.View Menu\n2.Add Item\n3.Remove Item\n4.View Current Order\n5.Exit")
+    print("\n")
+    print("""1.View Menu\n2.Add Item to Order \n3.Remove Item from Order\n4.View Current Order\n5.Update Item Quantity\n6.Checkout \n7.Cancel Order\n8.Manager Options\n0.Exit
+          """)
+    print("-" * 80)    
+
+
+#defining the get_menu_choice function
+def get_menu_choice(min_option,max_option):
+    #The while loop will continue to execute once the condition is true
+    while True:
+        #try is implememented here to exceute the code
+        try:
+            #the user will enter their which action they would like to carry out
+            menu_action = int(input("Enter your choice:  "))
+            #This checks to see if the user entered a valid range
+            if menu_action >= min_option and menu_action <= max_option:
+                #stops the loop and sends back the valid selection to where the function was called
+                return menu_action
+            else: 
+                #If the user enter a invalid range, an error message will be displayed
+                print(f"Invalid Selection, Please enter a value between {min_option} and {max_option}")
+        #This catches any invalid data type and displays an error message        
+        except ValueError:
+            print("Invalid input! Please enter a numeric option")
+           
+           
+def add_item(order,menu, item_code, quantity=1):
+    
+    '''
+    Add an item to the customer's existing order
+    '''
+    try:
+        
+        quantity = int(quantity)
+        
+        if quantity<=0:
+            print("Quantity must be greater than zero")
+        
+        if item_code in menu:
+            if item_code in order:
+                order[item_code] +=quantity
+            else:
+                order[item_code]= quantity
+        
+            print("Item added sucessfully!")
+        else:
+            print("Inavlid item code")
+    
+    except ValueError:
+        print("Invalid quantity. please enter a whole number")
+            
+
+def remove_item(order, code):
+    #check to see is empty
+    if order == {}:print("Your order is empty")
+    #check the code that is in the order the; the in key word return a true or false value. It is is true the code block is exceuted
+    if code in order:
+        #removing item form the user order by using the pop () method
+        order.pop(code)
+        print("Item removed sucessfully!")
+    else:
+        #if the custome order is empty
+        print("Item is not in your order.")
     
     
+def view_item(order, menu):
+    print("needt to be worked on")
     
-display_main_menu()
+def main():
+    print("Print needs to bw worked on")
