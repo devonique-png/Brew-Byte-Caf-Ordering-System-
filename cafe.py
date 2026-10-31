@@ -17,7 +17,7 @@ MONEY_FORMAT = "${:,.2f} JMD"
 # PART A: Menu and Order Functions
 def get_menu():
     """
-    Return the default menu as a dictionary keyed by item code.
+    Returns the default menu as a dictionary keyed by item code.
 
     Returns:
         dict: code -> {"name": str, "category": str, "price": float}
@@ -33,3 +33,5 @@ def get_menu():
         "S01": {"name": "Croissant", "category": "Snacks", "price": 350.00},
         "S02": {"name": "Chocolate Muffin", "category": "Snacks", "price": 300.00},
     }
+add
+    
