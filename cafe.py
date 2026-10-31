@@ -87,7 +87,7 @@ def display_main_menu():
     print("-" * 80)
     print("WELCOME TO BREW & BYTE CAFE".center(80))
     print("=" * 80)
-    print("1.View Menu\n2.Add Item\n3.Remove Item\n4. View Current Order\n5.Exit")
+    print("1.View Menu\n2.Add Item\n3.Remove Item\n4.View Current Order\n5.Exit")
     
     
     
