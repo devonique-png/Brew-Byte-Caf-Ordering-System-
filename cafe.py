@@ -26,7 +26,7 @@ def get_menu():
     Returns:
         dict: code -> {"name": str, "category": str, "price": float}
     """
-    return {
+    menu = {
         "C01": {"name": "Regular Coffee", "category": "c", "price": 350.00},
         "C02": {"name": "Cappuccino", "category": "Hot Drinks", "price": 550.00},
         "C03": {"name": "Hot Chocolate", "category": "Hot Drinks", "price": 450.00},
@@ -39,13 +39,11 @@ def get_menu():
         "F04": {"name": "Ackee and Saltfish Wrap", "category": "Food", "price": 950.00},
         
     }
-READ
-add
-    
-#Calling / invoking the get men function
-menu = get_menu() 
+    return menu
+#READ
+#add
 
-#creating the function defintion for the display menu(); This is responsible for showing the menu items
+#creating the function defintion for display menu(); This is responsible for showing the menu items
 def display_menu(menu):
     #creating and formatting the Menu title
     print("-" * 80)
@@ -55,7 +53,7 @@ def display_menu(menu):
     
     #adding a new line for display purposes 
     print("\n")
-    #adding the category title
+    #adding the category title for Hot Drinks
     print("\nHOT DRINKS\n".center(100))
     #formatting the headers for organizational puposes using format specifiers
     print(f"{'Item Code':<20}{'Item Name':<30}{'Category':<20}{'Price(JMD)':<10}")
@@ -77,6 +75,7 @@ def display_menu(menu):
             print(f"{itemcode:<20} {details['name']:<30} {details['category']:<20} ${details['price']:<20.2f}")
 
     print("\n")
+     #adding the category title for Hot Drinks
     print("\nFOOD\n")
     print(f"{'Item Code':<20}{'Item Name':<30}{'Category':<20}{'Price(JMD)':<10}")
     print("-" * 80)
@@ -85,8 +84,6 @@ def display_menu(menu):
             print(f"{itemcode:<20} {details['name']:<30} {details['category']:<20} ${details['price']:<20.2f}\n")
  
 #Invoking the display menu function
-display_menu(menu)
-
 
 def display_main_menu():
     print("\n")
@@ -98,6 +95,7 @@ def display_main_menu():
     print("""1.View Menu\n2.Add Item to Order \n3.Remove Item from Order\n4.View Current Order\n5.Update Item Quantity\n6.Checkout \n7.Cancel Order\n8.Manager Options\n0.Exit
           """)
     print("-" * 80)    
+
 
 
 #defining the get_menu_choice function
@@ -117,29 +115,36 @@ def get_menu_choice(min_option,max_option):
                 print(f"Invalid Selection, Please enter a value between {min_option} and {max_option}")
         #This catches any invalid data type and displays an error message        
         except ValueError:
-            print("Invalid input! Please enter a numeric option")
+            print("Invalid input! Please enter a numeric option.")
            
-           
+ 
+ 
 def add_item(order,menu, item_code, quantity=1):
-    
     '''
     Add an item to the customer's existing order
     '''
     try:
-        
+        #convert the quanity variable to an integer
         quantity = int(quantity)
         
+        #quantity check
         if quantity<=0:
             print("Quantity must be greater than zero")
-        
+            #stops the function if the condition is not met
+            return
+        #Since, menu is a dictionary the 'in' opertor checks whether the item code exists as a key in the menu dictionary
         if item_code in menu:
+            #order is a dictinary, that contains the customers order the in operator also checks to if the item_code exist in the customers' order
             if item_code in order:
+                #retrieving the value using it keys.
                 order[item_code] +=quantity
             else:
+                #If the item code does not already exist in the order, this code block adds it as a new item with the specified quantity.
                 order[item_code]= quantity
-        
+            #Displays a message to the user
             print("Item added sucessfully!")
         else:
+            #print an error message to the user if the code does not exist
             print("Inavlid item code")
     
     except ValueError:
@@ -148,22 +153,86 @@ def add_item(order,menu, item_code, quantity=1):
 
 def remove_item(order, code):
     #check to see is empty
-    if order == {}:print("Your order is empty")
+    if order == {}:
+        print("Your order is empty")
+        #stop the execution of the code if the order is empty
+        return
     #check the code that is in the order the; the in key word return a true or false value. It is is true the code block is exceuted
     if code in order:
-        #removing item form the user order by using the pop () method
+        #The pop() method removes an item in the customer's order by it keys
         order.pop(code)
         print("Item removed sucessfully!")
     else:
-        #if the custome order is empty
+        #if the item code does not exist in the order
         print("Item is not in your order.")
     
     
-def view_item(order, menu):
-    print("needt to be worked on")
+    
+def view_item(order, menu): 
+    #check to see the customer has any items in their cart
+    if order == {}:
+        print("Your order is empty")
+        #if the cart is empty the code stops executing
+        return 
+    #Looping through the customers' order
+    print("\n")
+    print("YOUR CURRENT ORDER".center(80))
+    print("\n")
+    print(f"{'Item':<25}{'Quantity':<15}{'Unit Price':<15}{'Line Total(JMD)':<20}")
+    print("=" * 80)
+    for item_code, quantity in order.items():
+        print(f"{menu[item_code]['name']:<25} {quantity:<15}{menu[item_code]['price']:<15.2f}${quantity * menu[item_code]['price']:<15.2f}")
+        print("_"*80)
+    
     
 def main():
-    print("Print needs to be worked on")
+    order = {}
+    menu = get_menu()
+    while True:
+        display_main_menu()
+        menu_selection = get_menu_choice(0, 8)
+        if menu_selection ==1:
+            display_menu(menu)
+        elif menu_selection ==2:
+            while True:
+                item_code = input("Enter item Code ('done' to finish):  ")     
+                if item_code.lower() == "done":
+                    break
+                quantity = input("Enter quantity: ")
+                add_item(order,menu, item_code, quantity)
+                print(order)                 
+        elif menu_selection ==3:
+            while True: 
+                item_code = input("Enter item Code to remove('done' to finish): ")
+                if item_code.lower() == "done":
+                    break
+                remove_item(order, item_code)             
+        elif menu_selection ==4:
+             view_item(order,menu)       
+        elif menu_selection ==5:
+                None
+        elif menu_selection ==6:
+                print("feature is not available")
+        elif menu_selection == 7:
+            print("feature is not available")
+        elif menu_selection ==8:
+            print("feature not available as yet")
+        elif menu_selection==0:
+            print("Exiting System Goodbye :)")
+            break
+        else:
+            print("Please enter a valid selection")
+                
+ 
+
+
+    
+    
+    
+    
+    
+    
+main() 
 
 def calculate_subtotal(order, menu):
     """
