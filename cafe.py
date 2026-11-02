@@ -1,5 +1,6 @@
 from gzip import READ
 from operator import add
+import csv
 
 
 GCT_RATE = 0.15
@@ -189,9 +190,35 @@ def view_item(order, menu):
         print("_"*80)
 
 
-def update_quantity():
-    print("...working progress")
+def update_quantity(order, item_code):
     
+   	#Checks whether the order dictionary is empty.
+    if order == {}:
+        print("Your Order is empty")
+        return
+    
+    #Checking whether the item_code exists in the customer's. 
+    if item_code in order:
+        try:
+            #The user will enter the updated quantity here.
+            new_quantity = input("Enter new quantity: ")
+            #change the data type from a string to integer
+            new_quantity = int(new_quantity)
+            #	Ensures the quantity is greater than 0 before updating
+            if new_quantity > 0:
+                #accessing the order key_value pair
+                order[item_code] = new_quantity
+                print("Quantity Updated")
+            else:
+                print("Quantity must be greater than zero")
+        except ValueError:
+            #Ensure the user enters a valid input without crashing the code
+            print("Please Enter a valid whole number.")     
+    else:
+        #	Prints a message if the item does not exist
+        print("Item not found in your order")
+    
+
 def main():
     order = {}
     menu = get_menu()
@@ -217,9 +244,10 @@ def main():
         elif menu_selection ==4:
              view_item(order,menu)       
         elif menu_selection ==5:
-                None
+                item_code = input("Enter item code to update:  ")
+                update_quantity(order, item_code)
         elif menu_selection ==6:
-                print("feature is not available")
+            None
         elif menu_selection == 7:
             print("feature is not available")
         elif menu_selection ==8:
@@ -232,25 +260,22 @@ def main():
 main() 
 
 def calculate_subtotal(order, menu):
-    """
-    Returns the discount amount for the given customer type.
-
-    Parameters:
-        subtotal (float): subtotal before discount.
-        customer_type (str): "student", "staff" or "regular".
-
-    Returns:
-        float: discount amount.
-    """
-    discount = 0.0
-    if customer_type == "student":
-        discount += subtotal * STUDENT_DISCOUNT
-    elif customer_type == "staff":
-        discount += subtotal * STAFF_DISCOUNT
-    if subtotal >= BULK_DISCOUNT_THRESHOLD:
-        discount += BULK_DISCOUNT_AMOUNT
-    return discount
-
+    if order == {}:
+        print("Order is empty")
+        return
+    #subtotal accumalator
+    subtotal = 0
+    
+    #looping through the order item and using the items method to loop through for the key_value pairs
+    for item_code, quantity in order.items():
+        unit_price = menu[item_code]["price"]
+        line_total = quantity * unit_price
+        subtotal +=line_total
+    #send the final calculated subtotal back to where the function was called    
+    return subtotal
+        
+  
+   
 def calculate_discount(subtotal, customer_type):
     """
     Returns the discount amount for the given customer type.
@@ -394,3 +419,21 @@ def print_receipt(order, menu, totals, customer_type):
     print(f"{'TOTAL':<40}{f'${total:,.2f} JMD':>15}")
     print("=" * 55)
 
+"""PART C"""
+def load_menu(filename):
+    try:
+        with open(filename, "r") as file:
+            reader = csv.DictReader(file)
+            menu={}
+            
+            for row in reader:
+                code = row["code"]
+                
+                menu[code] = {
+                    "name":row["name"],
+                    "category": row["category"],
+                    "price":row["price"]     
+                }
+            return menu
+    except FileNotFoundError:
+        ("Menu File was not found")

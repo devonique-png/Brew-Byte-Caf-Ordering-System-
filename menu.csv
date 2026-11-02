@@ -1,0 +1,11 @@
+code,name,category,price
+C01,Regular Coffee,Hot Drinks,350
+C02,Cappuccino,Hot Drinks,550
+C03,Hot Chocolate,Hot Drinks,450
+D01,Iced Latte,Cold Drinks,600
+D02,Fruit Smoothie,Cold Drinks,750
+D03,Bottled Water,Cold Drinks,150
+F01,Beef Patty,Food,400
+F02,Chicken Sandwich,Food,850
+F03,Banana Muffin,Food,300
+F04,Ackee and Saltfish Wrap,Food,950
