@@ -160,31 +160,26 @@ def remove_item(order, code):
     
     
 def view_item(order, menu):
-    print("needt to be worked on")
+    print("need to be worked on")
     
 def main():
     print("Print needs to be worked on")
 
 def calculate_subtotal(order, menu):
-    """
-    Returns the discount amount for the given customer type.
-
-    Parameters:
-        subtotal (float): subtotal before discount.
-        customer_type (str): "student", "staff" or "regular".
-
-    Returns:
-        float: discount amount.
-    """
-    discount = 0.0
-    if customer_type == "student":
-        discount += subtotal * STUDENT_DISCOUNT
-    elif customer_type == "staff":
-        discount += subtotal * STAFF_DISCOUNT
-    if subtotal >= BULK_DISCOUNT_THRESHOLD:
-        discount += BULK_DISCOUNT_AMOUNT
-    return discount
-
+    if order == {}:
+        print("Order is empty")
+        return
+    #subtotal accumalator
+    subtotal = 0
+    
+    #looping through the order item and using the items method to loop through for the key_value pairs
+    for item_code, quantity in order.items():
+        unit_price = menu[item_code]["price"]
+        line_total = quantity * unit_price
+        subtotal +=line_total
+    #send the final calculated subtotal back to where the function was called    
+    return subtotal
+        
 def calculate_discount(subtotal, customer_type):
     """
     Returns the discount amount for the given customer type.
@@ -203,7 +198,6 @@ def calculate_discount(subtotal, customer_type):
     if subtotal >= BULK_DISCOUNT_THRESHOLD:
         discount += BULK_DISCOUNT_AMOUNT
     return discount
-
 
 def calculate_tax(amount, rate=GCT_RATE):
     """
@@ -294,37 +288,4 @@ def get_yes_no(prompt):
             return False
         print("Please answer 'y' or 'n'.")
 
-def print_receipt(order, menu, totals, customer_type):
-    """
-    Print a formatted receipt showing every line item and the four totals.
-
-    Parameters:
-        order (dict): code -> quantity.
-        menu (dict): the menu dictionary.
-        totals (tuple): (subtotal, discount, tax, total).
-        customer_type (str): "student", "staff" or "regular".
-
-    Returns:
-        None
-    """
-    subtotal, discount, tax, total = totals
-    print("\n" + "=" * 55)
-    print("BREW & BYTE CAFE".center(55))
-    print("=" * 55)
-    for code, qty in order.items():
-        item = menu.get(code)
-        if item is None:
-            continue
-        line = item["price"] * qty
-        print(f"{item['name']:<24}x{qty:<4}{f'${line:,.2f}':>20}")
-    print("-" * 55)
-    print(f"{'Subtotal':<40}{f'${subtotal:,.2f}':>15}")
-    if discount > 0:
-        label = f"Discount ({customer_type} + bulk)" if subtotal >= BULK_DISCOUNT_THRESHOLD else f"Discount ({customer_type})"
-    else:
-        label = "Discount"
-    print(f"{label:<40}{f'-${discount:,.2f}':>15}")
-    print(f"{'GCT (15%)':<40}{f'${tax:,.2f}':>15}")
-    print(f"{'TOTAL':<40}{f'${total:,.2f} JMD':>15}")
-    print("=" * 55)
 
