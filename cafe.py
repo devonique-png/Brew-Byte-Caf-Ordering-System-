@@ -70,6 +70,7 @@ def display_menu(menu):
     print(f"{'Item Code':<20}{'Item Name':<30}{'Category':<20}{'Price(JMD)':<10}")
     print("-" * 80)
     
+    #using for loop to acess the key value pair in the menu dictionary
     for itemcode, details in menu.items():
         if details["category"] == "Cold Drinks":
             print(f"{itemcode:<20} {details['name']:<30} {details['category']:<20} ${details['price']:<20.2f}")
@@ -178,12 +179,18 @@ def view_item(order, menu):
     print("\n")
     print("YOUR CURRENT ORDER".center(80))
     print("\n")
+    #List item headers
     print(f"{'Item':<25}{'Quantity':<15}{'Unit Price':<15}{'Line Total(JMD)':<20}")
     print("=" * 80)
+    #looping through orders
     for item_code, quantity in order.items():
+        #Displaying the customer order using f string formatter
         print(f"{menu[item_code]['name']:<25} {quantity:<15}{menu[item_code]['price']:<15.2f}${quantity * menu[item_code]['price']:<15.2f}")
         print("_"*80)
-    
+
+
+def update_quantity():
+    print("...working progress")
     
 def main():
     order = {}
@@ -221,17 +228,7 @@ def main():
             print("Exiting System Goodbye :)")
             break
         else:
-            print("Please enter a valid selection")
-                
- 
-
-
-    
-    
-    
-    
-    
-    
+            print("Please enter a valid selection")   
 main() 
 
 def calculate_subtotal(order, menu):
