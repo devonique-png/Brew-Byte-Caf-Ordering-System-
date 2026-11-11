@@ -34,7 +34,7 @@ def get_menu():
         dict: code -> {"name": str, "category": str, "price": float}
     """
     menu = {
-        "C01": {"name": "Regular Coffee", "category": "c", "price": 350.00},
+        "C01": {"name": "Regular Coffee", "category": "Hot Drinks", "price": 350.00},
         "C02": {"name": "Cappuccino", "category": "Hot Drinks", "price": 550.00},
         "C03": {"name": "Hot Chocolate", "category": "Hot Drinks", "price": 450.00},
         "D01": {"name": "Iced Latte", "category": "Cold Drinks", "price": 600.00},
