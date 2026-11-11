@@ -1,8 +1,8 @@
-from datetime import datetime
 from gzip import READ
 from operator import add
-import csv
-import os
+from csv import DictReader , writer, reader
+from os import path 
+from datetime import datetime
 
 
 GCT_RATE = 0.15
@@ -10,10 +10,14 @@ STUDENT_DISCOUNT = 0.10
 STAFF_DISCOUNT = 0.05
 BULK_DISCOUNT_THRESHOLD = 2500.00
 BULK_DISCOUNT_AMOUNT = 200.00
+#point awarded for every 100 that is spent
 POINTS_PER_100 = 1
+#Reedem cost for the coffee
 REDEEM_COST = 50
-FREE_COFFEE_CODE = "B04"          # Regular Coffee (price overwritten to 0 on redeem)
-MANAGER_PIN = "1234"
+#Free coffee code variable used when the a loyalty member ga
+FREE_COFFEE_CODE = "C01"          # Regular Coffee (price overwritten to 0 on redeem)
+#manager pin that would authorize the manager acess
+MANAGER_PIN = "brewsscaffee@2026"
 MENU_FILE = "menu.csv"
 LOYALTY_FILE = "loyalty.csv"
 ORDERS_FILE = "orders.csv"
@@ -43,8 +47,7 @@ def get_menu():
         
     }
     return menu
-#READ
-#add
+
 
 #creating the function defintion for display menu(); This is responsible for showing the menu items
 def display_menu(menu):
@@ -170,10 +173,9 @@ def remove_item(order, code):
         #if the item code does not exist in the order
         print("Item is not in your order.")
     
-def view_item(order, menu):
-    print("need to be worked on")
     
-def view_item(order, menu): 
+    
+def view_order(order, menu): 
     #check to see the customer has any items in their cart
     if order == {}:
         print("Your order is empty")
@@ -191,7 +193,10 @@ def view_item(order, menu):
         #Displaying the customer order using f string formatter
         print(f"{menu[item_code]['name']:<25} {quantity:<15}{menu[item_code]['price']:<15.2f}${quantity * menu[item_code]['price']:<15.2f}")
         print("_"*80)
-
+    #Displating subtotal
+     # Display subtotal
+    subtotal = calculate_subtotal(order, menu)
+    print(f"{'ORDER SUBTOTAL:':<55}${subtotal:,.2f}")
 
 def update_quantity(order, item_code):
     
@@ -222,54 +227,14 @@ def update_quantity(order, item_code):
         print("Item not found in your order")
     
 
-def main():
-    order = {}
-    menu = get_menu()
-    while True:
-        display_main_menu()
-        menu_selection = get_menu_choice(0, 8)
-        if menu_selection ==1:
-            display_menu(menu)
-        elif menu_selection ==2:
-            while True:
-                item_code = input("Enter item Code ('done' to finish):  ")     
-                if item_code.lower() == "done":
-                    break
-                quantity = input("Enter quantity: ")
-                add_item(order,menu, item_code, quantity)
-                print(order)                 
-        elif menu_selection ==3:
-            while True: 
-                item_code = input("Enter item Code to remove('done' to finish): ")
-                if item_code.lower() == "done":
-                    break
-                remove_item(order, item_code)             
-        elif menu_selection ==4:
-             view_item(order,menu)       
-        elif menu_selection ==5:
-                item_code = input("Enter item code to update:  ")
-                update_quantity(order, item_code)
-        elif menu_selection ==6:
-            None
-        elif menu_selection == 7:
-            print("feature is not available")
-        elif menu_selection ==8:
-            print("feature not available as yet")
-        elif menu_selection==0:
-            print("Exiting System Goodbye :)")
-            break
-        else:
-            print("Please enter a valid selection")   
-main() 
 
-# Part B (billing, Discounts, Validation)
+
 def calculate_subtotal(order, menu):
     if order == {}:
         print("Order is empty")
         return
     #subtotal accumalator
     subtotal = 0
-    
     #looping through the order item and using the items method to loop through for the key_value pairs
     for item_code, quantity in order.items():
         unit_price = menu[item_code]["price"]
@@ -277,7 +242,9 @@ def calculate_subtotal(order, menu):
         subtotal +=line_total
     #send the final calculated subtotal back to where the function was called    
     return subtotal
+        
   
+   
 def calculate_discount(subtotal, customer_type):
     """
     Returns the discount amount for the given customer type.
@@ -296,6 +263,7 @@ def calculate_discount(subtotal, customer_type):
     if subtotal >= BULK_DISCOUNT_THRESHOLD:
         discount += BULK_DISCOUNT_AMOUNT
     return discount
+
 
 def calculate_tax(amount, rate=GCT_RATE):
     """
@@ -370,172 +338,284 @@ def get_valid_code(prompt, menu):
 
 def get_yes_no(prompt):
     """
-    Return True for y/yes and False for n/no; re-prompts otherwise.
-
-    Parameters:
-        prompt (str): message to display.
-
-    Returns:
-        bool: user's answer.
+    This is a simple yes/ no prompt function, which allows the user to select yes or no
+    depending on where the function was invoked
     """
     while True:
-        raw = input(prompt).strip().lower()
-        if raw in ("y", "yes"):
-            return True
-        if raw in ("n", "no"):
-            return False
-        print("Please answer 'y' or 'n'.")
+       #user input
+       answer = input(prompt).strip().lower()
+       
+       #conditional checks
+       if answer == "y" or answer == "yes":
+           return True
+       elif answer == "n" or answer == "no":
+           return False
+       else:
+           #if the user did not select one of the valid answer
+           print("Please enter yes or no")
 
-# PART C: (Loyalty, Reports and Integration)
-# Loads the menu from a CSV file. If the file is missing or broken, it falls back to the default menu.
+def print_receipt(order, menu, totals, customer_type):
+    """
+    Print a formatted receipt showing every line item and the four totals.
+
+    Parameters:
+        order (dict): code -> quantity.
+        menu (dict): the menu dictionary.
+        totals (tuple): (subtotal, discount, tax, total).
+        customer_type (str): "student", "staff" or "regular".
+
+    Returns:
+        None
+    """
+    subtotal, discount, tax, total = totals
+    print("\n" + "=" * 55)
+    print("BREW & BYTE CAFE".center(55))
+    print("=" * 55)
+    for code, qty in order.items():
+        item = menu.get(code)
+        if item is None:
+            continue
+        line = item["price"] * qty
+        print(f"{item['name']:<24}x{qty:<4}{f'${line:,.2f}':>20}")
+    print("-" * 55)
+    print(f"{'Subtotal':<40}{f'${subtotal:,.2f}':>15}")
+    if discount > 0:
+        label = f"Discount ({customer_type} + bulk)" if subtotal >= BULK_DISCOUNT_THRESHOLD else f"Discount ({customer_type})"
+    else:
+        label = "Discount"
+    print(f"{label:<40}{f'-${discount:,.2f}':>15}")
+    print(f"{'GCT (15%)':<40}{f'${tax:,.2f}':>15}")
+    print(f"{'TOTAL':<40}{f'${total:,.2f} JMD':>15}")
+    print("=" * 55)
+    
+    
+def cancel_order(order):
+    """
+    This function was designed to cancel an customer order completely
+    """
+    if order == {}:
+        print("Your order is empty. Unable to cancel order.")
+        return order
+
+    confirmation = get_yes_no("Would you like to cancel the customer's order? (y/n): ")
+
+    if confirmation:
+        order.clear()
+        print("Your order was successfully cancelled.")
+    else:
+        print("Order cancellation aborted.")
+
+    return order
+
+
+"""PART C"""
+
+
 def load_menu(filename):
-    # Check if the file exists before trying to open it
-    if not os.path.exists(filename):
-        print(f"Warning: menu file '{filename}' not found. Using default menu.")
-        return get_menu()
-    menu = {}
     try:
-        # Open the CSV file and use DictReader to read rows as dictionaries
-        with open(filename, "r", newline="", encoding="utf-8") as file:
-            reader = csv.DictReader(file)
-            for line_no, row in enumerate(reader, start=2):
-                try:
-                      # Extract and clean the data from each row
-                    code = row["code"].strip().upper()
-                    menu[code] = {
-                        "name": row["name"].strip(),
-                        "category": row["category"].strip(),
-                        "price": float(row["price"])
-                    }
-                except (KeyError, ValueError, AttributeError):
-                     # If a row is formatted badly, skip it and warn the user instead of crashing
-                    print(f"Warning: skipping badly formatted line {line_no} in '{filename}'.")
-    except OSError as exc:
-         # Catch file read errors (like permission issues) and fall back safely
-        print(f"Warning: could not read '{filename}' ({exc}). Using default menu.")
+        #reading a file 
+        with open (filename, "r") as f: 
+            
+            reader = DictReader(f)
+            #empty menu dictionary to store menu items from the menu.csv files
+            menu = {}
+    
+            #Iterating the the csv file 
+            for row in reader:
+                #print(row)
+                code = row["code"]
+                """
+                creating an object to store the menu items from the csv file
+                and using the strip () string method to remove trailling spaces
+                
+                """
+                menu[code] = {
+                    "name": row["name"],
+                    "category": row["category"],
+                    "price":float(row["price"])
+                }
+            #print("File opended sucessfully")  
+            #once the menu is loaded the code stops exceuting
+            return menu 
+    #If menu does not exist python will raisE a FileNotFoundError    
+    except FileNotFoundError:
+        print("Warning: Menu file not found. Using default menu")
+        #if the csv file menu fails to load we use the default get_menu function ()
         return get_menu()
-    # If the file was empty, fall back to the default menu
-    if not menu:
-        print(f"Warning: menu file '{filename}' was empty. Using default menu.")
-        return get_menu()
-    return menu
+    
+menu = (load_menu("menu.csv"))
+#print(menu)
 
-# Reads the loyalty members from a CSV file and returns them as a dictionary.
 def load_loyalty(filename):
-    members = {}
-    if not os.path.exists(filename):
-        return members
+    
     try:
-        with open(filename, "r", newline="", encoding="utf-8") as f:
-            reader = csv.reader(f)
-            for line_no, row in enumerate(reader, start=1):
-                if not row or not row[0].strip():
-                    continue
-                try:
-                    member_id = row[0].strip().upper()
-                    name = row[1].strip()
-                    points = int(row[2])
-                    members[member_id] = {"name": name, "points": points}
-                except (IndexError, ValueError):
-                    print(f"Warning: skipping badly formatted line {line_no} in '{filename}'.")
-    except OSError as exc:
-        print(f"Warning: could not read '{filename}' ({exc}).")
-    return members
-
-# Saves the current loyalty members dictionary back to the CSV file.
+        #reading file
+        
+        with open(filename, "r") as f:
+            reader = DictReader(f)
+            #empty dictionaty to store members
+            member = {}
+            #Iterating over csv file
+        
+            for row in reader:
+                member_id = row["member_id"] 
+                """
+               Creating an object to store the loyalty members, along with their points 
+               and using the strip () string method to remove any white trailing spaces.
+                                
+                """
+                
+                member[member_id] = {
+                    "name": row["name"].strip(),
+                    "points": int(float(row["points"].strip()))
+                }
+                
+            return member
+            
+    except FileNotFoundError:
+        print("Warning: Loyalty file not found. Starting with an empty member list! ")
+        
+        
 def save_loyalty(filename, members):
-    try:
+    
+    try: 
         with open(filename, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            for member_id, info in members.items():
-                writer.writerow([member_id, info["name"], info["points"]])
+            writer_obj = writer(f)
+            #Write Column Headings
+            writer_obj.writerow(["member_id", "name", "points"])
+            #Iterate through member dictionary
+            for member_id, details in members.items():
+                writer_obj.writerow([
+                    member_id,
+                    details["name"],
+                    details["points"]     
+                ])
     except OSError as exc:
-        print(f"Warning: could not save loyalty file '{filename}' ({exc}).")
+        print(f"Warning: Could not save loyalty file ({exc}).")
+                
 
-# Prompts the manager to add a new member and assigns them a unique ID.
 def register_member(members):
     name = input("Enter member name: ").strip()
-    # Don't allow empty names
-    if not name:
+    #checks if the name input is empty
+    if name =="":
         print("Error: name cannot be empty.")
-        return members
-    # Generate a unique ID by starting at M001 and counting up
+        return members   
+    """
+    Python starts with the number 1. It would create the the ID in the format M001.
+    This then checks if the ID alreday exists in members. If it exist it increase the ID number. 
+    """
     number = 1
     while f"M{number:03d}" in members:
         number += 1
     member_id = f"M{number:03d}"
-    # Add the new member to the dictionary with 0 points
-    members[member_id] = {"name": name, "points": 0}
+    members[member_id] = {
+        "name": name, 
+        "points": 0}
     print(f"Registered {name} with member ID {member_id}.")
     return members
 
-# Adds loyalty points based on how much the customer spent.
+
 def award_points(members, member_id, amount_spent):
-    member_id = member_id.upper()
-    # Make sure the member actually exists before giving points
+    #check if member id exists
     if member_id not in members:
         print(f"Error: member '{member_id}' not found.")
+        #return 0 is we are unable to find customer id
         return 0
+    #calculate points earned based on the amount that was spent
     earned = int(amount_spent // 100) * POINTS_PER_100
     members[member_id]["points"] += earned
+    
+    #returned the point that were earned
     return earned
-
-# Redeems points for a free coffee if the member has enough.
+    
+    
 def redeem_points(members, member_id, order):
-    member_id = member_id.upper()
-     # Check if the member exists
+    #check if member exists
+    
     if member_id not in members:
         return False
-    if members[member_id]["points"] < REDEEM_COST:
+    
+    """
+    check to see if a member has enough points; stops the execution of the 
+    code once the points are less than the REDEEM_COST
+    
+    """
+    if members[member_id]["points"]< REDEEM_COST:
         return False
-    # Deduct the points and add a free coffee to the order
+    
+    #Deduct the redemtion cost
     members[member_id]["points"] -= REDEEM_COST
-    order[FREE_COFFEE_CODE] = order.get(FREE_COFFEE_CODE, 0) + 1
+    
+    #Adding the free coffee to the order
+    
+    if FREE_COFFEE_CODE in order:
+        order[FREE_COFFEE_CODE] +=1
+    else:
+        order[FREE_COFFEE_CODE] = 1
+ 
+    #confirm sucessful 
     return True
-
-# Saves a completed order to the orders CSV file.
+ 
+ 
 def save_order(filename, order, totals):
+    """
+    Saves a completed customer order to a CSV file.
+    """
     subtotal, discount, tax, total = totals
+
     try:
-        file_exists = os.path.exists(filename)
+        # Check whether the file exists and is not empty
+        file_exists = path.exists(filename) and path.getsize(filename) > 0
+
+        # Open the file in append mode
         with open(filename, "a", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
+            obj_writer = writer(f)
+
+            # Write column headers if the file is new or empty
             if not file_exists:
-                writer.writerow(["datetime", "items", "subtotal", "discount", "tax", "total"])
-                # Format the order items into a single string (e.g., "C01:2;F01:5")
-            items_str = ";".join(f"{code}:{qty}" for code, qty in order.items())
-            writer.writerow([
+                obj_writer.writerow([
+                    "datetime",
+                    "items",
+                    "subtotal",
+                    "discount",
+                    "tax",
+                    "total"
+                ])
+
+            # Convert order dictionary into a string
+            items_str = ";".join(
+                f"{code}:{qty}" for code, qty in order.items()
+            )
+
+            # Write the order details to the CSV file
+            obj_writer.writerow([
                 datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 items_str,
                 f"{subtotal:.2f}",
                 f"{discount:.2f}",
                 f"{tax:.2f}",
-                f"{total:.2f}",
+                f"{total:.2f}"
             ])
+
     except OSError as exc:
         print(f"Warning: could not save order to '{filename}' ({exc}).")
-
-# Reads the saved orders from the CSV file so the manager report can calculate totals.
+     
 def load_orders(filename):
     orders = []
-     # If the file doesn't exist, return an empty list
-    if not os.path.exists(filename):
+    if not path.exists(filename):
         return orders
     try:
         with open(filename, "r", newline="", encoding="utf-8") as f:
-            reader = csv.reader(f)
-            for line_no, row in enumerate(reader, start=1):
+            obj_reader = reader(f)
+            for line_no, row in enumerate( obj_reader, start=1):
                 if not row or row[0].strip() == "datetime":
                     continue
                 try:
-                    # Convert the saved items string back into a dictionary
                     items = {}
                     if row[1].strip():
                         for part in row[1].split(";"):
                             code, qty = part.split(":")
                             items[code.strip()] = int(qty)
-
-                    # Rebuild the order dictionary and add it to the list
                     orders.append({
                         "datetime": row[0],
                         "items": items,
@@ -550,36 +630,35 @@ def load_orders(filename):
         print(f"Warning: could not read orders file '{filename}' ({exc}).")
     return orders
 
-# Calculates the daily report (order count, revenue, tax, best-seller) from the list of orders.
 def generate_daily_report(orders):
+    """
+    Generates a daily sales report.
+    """
+    # Create a dictionary to store the report results
     report = {
         "order_count": len(orders),
         "total_revenue": 0.0,
         "total_tax": 0.0,
         "best_selling_item": "N/A",
     }
+    # Dictionary to keep track of the total quantity sold for each item
     item_totals = {}
-     # Loop through every saved order
     for record in orders:
-    # Add to the total revenue and tax
         report["total_revenue"] += record.get("total", 0.0)
         report["total_tax"] += record.get("tax", 0.0)
-        # Count how many of each item were sold
         for code, qty in record.get("items", {}).items():
             item_totals[code] = item_totals.get(code, 0) + qty
     if item_totals:
         report["best_selling_item"] = max(item_totals, key=item_totals.get)
     return report
 
-# Prints the daily sales report on the screen in a neat format.
-def display_report(report, menu=None):
+def display_report(report, menu):
     print("\n" + "=" * 45)
     print("DAILY SALES REPORT".center(45))
     print("=" * 45)
     print(f"Number of orders : {report['order_count']}")
     print(f"Total revenue    : {MONEY_FORMAT.format(report['total_revenue'])}")
     print(f"Tax collected    : {MONEY_FORMAT.format(report['total_tax'])}")
-    # If we have the menu, show the name of the best-selling item along with its code
     best = report["best_selling_item"]
     if menu and best in menu:
         best = f"{menu[best]['name']} ({best})"
@@ -587,84 +666,147 @@ def display_report(report, menu=None):
     print("=" * 45)
 
 # Interactive helpers
-# Asks the user what type of customer they are (Student, Staff, or Regular).
 def get_customer_type():
     print("Customer type: 1) Student  2) Staff  3) Regular")
     choice = get_menu_choice(1, 3)
     return {1: "student", 2: "staff", 3: "regular"}[choice]
 
-# Asks for the item code and quantity, then calls add_item.
 def handle_add_item(order, menu):
-    item_code = get_valid_code("Enter item code: ", menu)
-    quantity = get_valid_quantity(f"Enter quantity ({MIN_QUANTITY}-{MAX_QUANTITY}): ")
-    return add_item(order, menu, item_code, quantity)
+    
+    """
+    This is an interactive helper function that allows us to add more than one item
+    in an order. It also helps to keep the main () function cleaner and organized. 
+    """
+    
+    #contines to execute the code once the condition is True
+    while True:
+        item_code = input("Enter item code ('done' to finish): ").strip().upper().replace(" ", "")
+        #This stops the while loop
+        if item_code == "DONE":
+            break
+        
+        """
+        Check to see if item code is not in the menu, if the code is invalid
+        python displayy an error. The contiue execution send back to the begining of the while loop.
+        """
+        
+        if item_code not in menu:
+            print("Invalid item code. Please try again.")
+            continue
 
-# Asks for the item code and calls remove_item.
-def handle_remove_item(order, menu):
-    if not order:
-        print("Your order is empty; nothing to remove.")
-        return order
-    code = get_valid_code("Enter item code to remove: ", menu)
-    remove_item(order, code)
+        quantity = input("Enter quantity: ")
+        #The add item function()
+        add_item(order, menu, item_code, quantity)
+    #returning the order back to where it was invoked
     return order
 
-# Shows the order, asks for an item code, and calls update_quantity.
+
+
+def handle_remove_item(order, menu):
+    
+    """
+    This is an helper function that allows us to remove more than one item from
+    the customer's order.
+    """
+    
+    while True:
+        item_code = input("Enter item code to remove ('done' to finish): ").strip().upper()
+        #user would type DONE ton escape the loop
+        if item_code == "DONE":
+            break
+        #remove item from the orders
+        if item_code in menu:
+            remove_item(order, item_code)
+        else:
+            #This is if the code is invalid
+            print("Invalid item code. Please try again.")
+
+    return order
+
 def handle_update_quantity(order, menu):
+    #Display the items that are currently in customers order
+    view_order(order, menu)
+    #stop is the customer has no items in their order
     if not order:
-        print("Your order is empty; nothing to update.")
         return order
-    view_item(order, menu)
+    #Ask the customer which order they would like to update
     code = get_valid_code("Enter item code to update: ", menu)
+
     return update_quantity(order, code)
 
-# Manages the entire checkout process: customer type, loyalty, receipt, and saving.
+
 def handle_checkout(order, menu, members):
+    """
+    This function handles the checkout
+    """
+    #checks whether the order is empty
     if not order:
         print("Cannot checkout: your order is empty.")
         return order
-    # Ask for customer type
+
     customer_type = get_customer_type()
-    # Handle loyalty member check
+    #Assigned none because no loyalty members has been indentified
     member_id = None
+    #check to see if the customer has loyalty points. It is false intially because the customer has not redeemed the point as yet
+    redeemed = False
+
     if get_yes_no("Is the customer a loyalty member? (y/n): "):
         entered = input("Enter member ID: ").strip().upper()
+
         if entered in members:
             member_id = entered
         else:
             print(f"Member '{entered}' not found; treating as non-member.")
-    # Offer redemption if they have enough points
+
     if member_id and members[member_id]["points"] >= REDEEM_COST:
-        prompt = (f"{members[member_id]['name']} has {members[member_id]['points']} points. "
-                  f"Redeem {REDEEM_COST} for a free Regular Coffee? (y/n): ")
+        prompt = (
+            f"{members[member_id]['name']} has {members[member_id]['points']} points. "
+            f"Redeem {REDEEM_COST} for a free Regular Coffee? (y/n): "
+        )
+
         if get_yes_no(prompt):
+            points_before = members[member_id]["points"]
+            coffee_before = order.get(FREE_COFFEE_CODE, 0)
+
             if redeem_points(members, member_id, order):
+                redeemed = True
                 print("Free Regular Coffee added to the order.")
-    # Calculate the final totals
+
     totals = calculate_total(order, menu, customer_type)
-    # Print the receipt for the customer
     print_receipt(order, menu, totals, customer_type)
-    # Give them a chance to cancel before saving
+
     if not get_yes_no("Confirm payment? (y/n): "):
+        if redeemed:
+            members[member_id]["points"] = points_before
+
+            if coffee_before == 0:
+                order.pop(FREE_COFFEE_CODE, None)
+            else:
+                order[FREE_COFFEE_CODE] = coffee_before
+
         print("Checkout cancelled. Your order is still open.")
         return order
-    # Save the order to the CSV file
+
     save_order(ORDERS_FILE, order, totals)
+
     if member_id:
         earned = award_points(members, member_id, totals[3])
-        print(f"{earned} point(s) awarded to {members[member_id]['name']}. "
-              f"New balance: {members[member_id]['points']}.")
+        print(
+            f"{earned} point(s) awarded to {members[member_id]['name']}. "
+            f"New balance: {members[member_id]['points']}."
+        )
         save_loyalty(LOYALTY_FILE, members)
+
     print("Payment complete. Thank you!")
     return {}
 
-# The Manager sub-menu, protected by a PIN.
+
 def handle_manager_options(menu, members):
     pin = input("Enter manager PIN: ").strip()
+    #check to see if the pin is incorrect 
     if pin != MANAGER_PIN:
         print("Incorrect PIN. Access denied.")
-        return members # Kick them back to the main menu
-
-# Loop the manager menu until they choose 0 to exit
+        return members
     while True:
         print("\nMANAGER OPTIONS")
         print("1. View daily sales report")
@@ -675,15 +817,12 @@ def handle_manager_options(menu, members):
         if choice == 0:
             return members
         if choice == 1:
-            # Load the orders from the file and generate the report
             orders = load_orders(ORDERS_FILE)
             display_report(generate_daily_report(orders), menu)
         elif choice == 2:
-            # Register a new member and save the updated list
             members = register_member(members)
             save_loyalty(LOYALTY_FILE, members)
         elif choice == 3:
-            # Print the list of all registered members
             if not members:
                 print("No loyalty members registered.")
             else:
@@ -691,3 +830,36 @@ def handle_manager_options(menu, members):
                 print(f"{'ID':<8}{'Name':<24}{'Points':>8}")
                 for mid, info in members.items():
                     print(f"{mid:<8}{info['name']:<24}{info['points']:>8}")
+
+
+def main():
+    order = {}
+    menu = get_menu()
+    members = load_loyalty(LOYALTY_FILE)
+    while True:
+        display_main_menu()
+        menu_selection = get_menu_choice(0, 8)
+        if menu_selection ==1:
+            display_menu(menu)
+        elif menu_selection ==2:
+           handle_add_item(order, menu)             
+        elif menu_selection ==3:
+           handle_remove_item(order, menu)            
+        elif menu_selection ==4:
+             view_order(order,menu)       
+        elif menu_selection ==5:
+            handle_update_quantity(order, menu)
+        elif menu_selection ==6:
+           order = handle_checkout(order, menu, members)
+        elif menu_selection == 7:
+            cancel_order(order)
+        elif menu_selection ==8:
+            handle_manager_options(menu, members)
+        elif menu_selection==0:
+            print("Exiting System Goodbye :)")
+            break
+        else:
+            print("Please enter a valid selection")   
+
+if __name__ == "__main__":
+    main()
