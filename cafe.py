@@ -29,9 +29,6 @@ MONEY_FORMAT = "${:,.2f} JMD"
 def get_menu():
     """
     Returns the default menu as a dictionary keyed by item code.
-
-    Returns:
-        dict: code -> {"name": str, "category": str, "price": float}
     """
     menu = {
         "C01": {"name": "Regular Coffee", "category": "Hot Drinks", "price": 350.00},
@@ -388,23 +385,25 @@ def print_receipt(order, menu, totals, customer_type):
     print(f"{'TOTAL':<40}{f'${total:,.2f} JMD':>15}")
     print("=" * 55)
     
-    
+#Defining the cancel_order function; this is use to cancel an entire order  
 def cancel_order(order):
     """
     This function was designed to cancel an customer order completely
     """
+    #check if the order is empty; this prevent us from cancelling the order
     if order == {}:
         print("Your order is empty. Unable to cancel order.")
+        #stops the execution of the code if the order is empty
         return order
 
     confirmation = get_yes_no("Would you like to cancel the customer's order? (y/n): ")
-
+    
     if confirmation:
         order.clear()
         print("Your order was successfully cancelled.")
     else:
         print("Order cancellation aborted.")
-
+    #return the function back to were it was called 
     return order
 
 
