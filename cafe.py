@@ -1,9 +1,9 @@
-from gzip import READ
-from operator import add
 from csv import DictReader , writer, reader
 from os import path 
 from datetime import datetime
 
+
+#constants
 
 GCT_RATE = 0.15
 STUDENT_DISCOUNT = 0.10
@@ -23,6 +23,7 @@ LOYALTY_FILE = "loyalty.csv"
 ORDERS_FILE = "orders.csv"
 MIN_QUANTITY = 1
 MAX_QUANTITY = 20
+#formatting the money using string formatter
 MONEY_FORMAT = "${:,.2f} JMD"
 
 # PART A: Menu and Order Functions
@@ -407,7 +408,7 @@ def cancel_order(order):
     return order
 
 
-"""PART C"""
+"""PART C """
 
 
 def load_menu(filename):
@@ -470,14 +471,20 @@ def load_loyalty(filename):
                 }
                 
             return member
-            
+        
+    # If the file doesn't exist, Python raises a FileNotFoundError        
     except FileNotFoundError:
         print("Warning: Loyalty file not found. Starting with an empty member list! ")
-        
-        
+         # Fall back to the default menu defined in the code
+        return get_menu()
+
+        # Load the menu once when the program starts
+        menu = (load_menu("menu.csv"))
+
 def save_loyalty(filename, members):
     
     try: 
+        # Open the loyalty CSV file
         with open(filename, "w", newline="", encoding="utf-8") as f:
             writer_obj = writer(f)
             #Write Column Headings
@@ -489,6 +496,7 @@ def save_loyalty(filename, members):
                     details["name"],
                     details["points"]     
                 ])
+    # Catch any file system errors and warn the user
     except OSError as exc:
         print(f"Warning: Could not save loyalty file ({exc}).")
                 
@@ -595,26 +603,32 @@ def save_order(filename, order, totals):
                 f"{tax:.2f}",
                 f"{total:.2f}"
             ])
-
+    # Catch any file writing errors without crashing the program
     except OSError as exc:
         print(f"Warning: could not save order to '{filename}' ({exc}).")
      
 def load_orders(filename):
+    # Create an empty list to hold past orders
     orders = []
+    # If the file doesn't exist, return the empty list
     if not path.exists(filename):
         return orders
     try:
+        # Open the orders file for reading
         with open(filename, "r", newline="", encoding="utf-8") as f:
             obj_reader = reader(f)
+            # Loop through each row in the file
             for line_no, row in enumerate( obj_reader, start=1):
                 if not row or row[0].strip() == "datetime":
                     continue
                 try:
+                    # Rebuild the items dictionary from the string format
                     items = {}
                     if row[1].strip():
                         for part in row[1].split(";"):
                             code, qty = part.split(":")
                             items[code.strip()] = int(qty)
+                    # Reconstruct the order record and add it to the list
                     orders.append({
                         "datetime": row[0],
                         "items": items,
@@ -623,8 +637,10 @@ def load_orders(filename):
                         "tax": float(row[4]),
                         "total": float(row[5]),
                     })
+                # If a line is messed up, skip it and warn the user
                 except (IndexError, ValueError):
                     print(f"Warning: skipping badly formatted order line {line_no}.")
+    # Catch file reading errors
     except OSError as exc:
         print(f"Warning: could not read orders file '{filename}' ({exc}).")
     return orders
@@ -642,16 +658,20 @@ def generate_daily_report(orders):
     }
     # Dictionary to keep track of the total quantity sold for each item
     item_totals = {}
+    # Loop through every past order
     for record in orders:
+        # Add to the total revenue and tax
         report["total_revenue"] += record.get("total", 0.0)
         report["total_tax"] += record.get("tax", 0.0)
         for code, qty in record.get("items", {}).items():
             item_totals[code] = item_totals.get(code, 0) + qty
+    # Find the item with the highest sales quantity
     if item_totals:
         report["best_selling_item"] = max(item_totals, key=item_totals.get)
     return report
 
 def display_report(report, menu):
+    # Print the report layout
     print("\n" + "=" * 45)
     print("DAILY SALES REPORT".center(45))
     print("=" * 45)
@@ -659,6 +679,7 @@ def display_report(report, menu):
     print(f"Total revenue    : {MONEY_FORMAT.format(report['total_revenue'])}")
     print(f"Tax collected    : {MONEY_FORMAT.format(report['total_tax'])}")
     best = report["best_selling_item"]
+    # If the menu is available, show the human-readable item name instead of just the code
     if menu and best in menu:
         best = f"{menu[best]['name']} ({best})"
     print(f"Best-selling item: {best}")
@@ -666,12 +687,14 @@ def display_report(report, menu):
 
 # Interactive helpers
 def get_customer_type():
+    # Ask the user to select a customer type
     print("Customer type: 1) Student  2) Staff  3) Regular")
     choice = get_menu_choice(1, 3)
+    # Return the string based on the number chosen
     return {1: "student", 2: "staff", 3: "regular"}[choice]
 
 def handle_add_item(order, menu):
-    
+    # Keep asking for items until the user types 'done'
     """
     This is an interactive helper function that allows us to add more than one item
     in an order. It also helps to keep the main () function cleaner and organized. 
@@ -702,7 +725,7 @@ def handle_add_item(order, menu):
 
 
 def handle_remove_item(order, menu):
-    
+    # Keep asking for items to remove until the user types 'done'
     """
     This is an helper function that allows us to remove more than one item from
     the customer's order.
@@ -749,6 +772,7 @@ def handle_checkout(order, menu, members):
     #check to see if the customer has loyalty points. It is false intially because the customer has not redeemed the point as yet
     redeemed = False
 
+    # Ask if the customer is a loyalty member
     if get_yes_no("Is the customer a loyalty member? (y/n): "):
         entered = input("Enter member ID: ").strip().upper()
 
@@ -756,7 +780,7 @@ def handle_checkout(order, menu, members):
             member_id = entered
         else:
             print(f"Member '{entered}' not found; treating as non-member.")
-
+    # Check if the member has enough points to redeem a free coffee
     if member_id and members[member_id]["points"] >= REDEEM_COST:
         prompt = (
             f"{members[member_id]['name']} has {members[member_id]['points']} points. "
@@ -764,20 +788,23 @@ def handle_checkout(order, menu, members):
         )
 
         if get_yes_no(prompt):
+            # Save current points and coffee count just in case they cancel the checkout
             points_before = members[member_id]["points"]
             coffee_before = order.get(FREE_COFFEE_CODE, 0)
-
+            # Try to redeem the points
             if redeem_points(members, member_id, order):
                 redeemed = True
                 print("Free Regular Coffee added to the order.")
 
+    # Calculate and print the final receipt
     totals = calculate_total(order, menu, customer_type)
     print_receipt(order, menu, totals, customer_type)
-
+    # Ask for payment confirmation
     if not get_yes_no("Confirm payment? (y/n): "):
+        # If they cancel and had redeemed a coffee, undo the redemption
         if redeemed:
             members[member_id]["points"] = points_before
-
+            # Remove the free coffee from the order
             if coffee_before == 0:
                 order.pop(FREE_COFFEE_CODE, None)
             else:
@@ -788,6 +815,7 @@ def handle_checkout(order, menu, members):
 
     save_order(ORDERS_FILE, order, totals)
 
+    # If they are a member, award new points and save the updated loyalty file
     if member_id:
         earned = award_points(members, member_id, totals[3])
         print(
@@ -797,6 +825,7 @@ def handle_checkout(order, menu, members):
         save_loyalty(LOYALTY_FILE, members)
 
     print("Payment complete. Thank you!")
+    # Return an empty dictionary to clear the order
     return {}
 
 
@@ -804,8 +833,10 @@ def handle_manager_options(menu, members):
     pin = input("Enter manager PIN: ").strip()
     #check to see if the pin is incorrect 
     if pin != MANAGER_PIN:
+        # Deny access if the PIN is wrong
         print("Incorrect PIN. Access denied.")
         return members
+    # Loop the manager menu until they choose to exit (0)
     while True:
         print("\nMANAGER OPTIONS")
         print("1. View daily sales report")
@@ -816,12 +847,15 @@ def handle_manager_options(menu, members):
         if choice == 0:
             return members
         if choice == 1:
+            # Load orders from the file and display the generated report
             orders = load_orders(ORDERS_FILE)
             display_report(generate_daily_report(orders), menu)
         elif choice == 2:
+            # Register a new member and save to the CSV file
             members = register_member(members)
             save_loyalty(LOYALTY_FILE, members)
         elif choice == 3:
+            # Display the list of all registered loyalty members
             if not members:
                 print("No loyalty members registered.")
             else:
